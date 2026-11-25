@@ -2,6 +2,5 @@ Exécution G8 : 25 novembre 2026
 Environnement : ia.labo2.0
 Interpréteur : /home/andrix-ng/anaconda3/envs/ia.labo2.0/bin/python
 Python : 3.12.15
-matplotlib : OK 3.11.2 ; les trois graphiques ont été régénérés.
 Les tests, le codage source, les trames, le CRC et la boucle locale utilisent uniquement la bibliothèque standard Python.
 Module 1 sans audio : 33 tests réussis, CRC 0x29B1, trois fichiers reconstruits avec SHA-256 identiques.

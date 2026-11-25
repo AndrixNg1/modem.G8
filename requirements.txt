@@ -1,3 +1,0 @@
-# Le code du module 1 et ses tests utilisent uniquement la bibliothèque standard.
-# Dépendance nécessaire uniquement pour générer les graphiques de mesures.
-matplotlib

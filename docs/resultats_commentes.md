@@ -33,4 +33,4 @@ Les résultats sont proches des valeurs théoriques 1-(1-p)^n, où n inclut ici 
 ## 4. Validation technique préalable
 Exécution le 25 novembre 2026 avec `/home/andrix-ng/anaconda3/envs/ia.labo2.0/bin/python`. J1 : CRC("123456789") = 0x29B1. J2 : SHA-256 identiques pour les trois fichiers ; le détail est dans mesures/resultats.txt et boucle_locale.csv. 33 tests automatiques réussis, dont les paramètres G8 et le découpage en blocs de 48 octets. J1/J2 officiels à faire valider en salle.
 
-Les graphiques PNG et les CSV se trouvent dans mesures/. Pour refaire les graphiques après une nouvelle mesure : `python graphiques.py` (matplotlib installé).
+Les tableaux CSV se trouvent dans mesures/. Pour les recalculer : `python tests/test_module1.py --mesures`.
