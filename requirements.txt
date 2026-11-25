@@ -1,0 +1,6 @@
+# Utiles pour la vérification de l'environnement et les modules audio suivants.
+# Le module 1 (hors lecture audio directe) fonctionne avec Python seul.
+numpy
+scipy
+sounddevice
+matplotlib
