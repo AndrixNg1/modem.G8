@@ -2,11 +2,11 @@
 Séance 1 ; date et heures réelles : à compléter.
 Membres présents, rôles et participation à distance : à compléter honnêtement.
 
-Objectifs : installation, test 1 kHz, entropie, compression, tramage, CRC et boucle locale.
+Objectifs : entropie, compression, tramage, CRC et boucle locale sans son.
 
 | Heure réelle | Mesure | Conditions | Valeur obtenue | Valeur prédite |
 |---|---|---|---|---|
-| | Environnement et audio 1 kHz | PC, Audacity, micro/HP | | |
+| | Environnement Python | Un PC, ia.labo2.0 | | |
 | | Entropie et compression | Fichiers de la séance, Python | | |
 | | Rendements | G8, N=48, graine 2026 | | |
 | | Erreurs | 1000 trames/p, canal simulé | | |

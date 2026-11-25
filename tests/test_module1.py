@@ -9,12 +9,12 @@ from crc import crc16_ccitt
 from trame import *
 from transfert import *
 from mesures_module1 import mesurer_rendements, mesurer_erreurs
-from config import ADRESSE, N, GROUPE, F0, F1
+from config import ADRESSE, N, GROUPE
 
 
 class TestConfiguration(unittest.TestCase):
     def test_parametres_G8(self):
-        self.assertEqual((GROUPE, ADRESSE, N, F0, F1), ('G8', 0x18, 48, 7400, 7600))
+        self.assertEqual((GROUPE, ADRESSE, N), ('G8', 0x18, 48))
 
     def test_decoupage_G8(self):
         data = bytes(range(97))

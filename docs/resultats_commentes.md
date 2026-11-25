@@ -1,6 +1,6 @@
 # Résultats de l'exécution locale — Module 1, G8
 
-Les résultats suivants sont issus de l'exécution effective du programme sur les fichiers de démonstration inclus. Les valeurs de la séance doivent être recalculées avec les fichiers éventuellement imposés par l'enseignant. Aucun visa officiel ni essai acoustique physique n'est revendiqué.
+Les résultats suivants sont issus de l'exécution effective du programme en boucle locale sur les fichiers de démonstration inclus. Les valeurs de la séance doivent être recalculées avec les fichiers éventuellement imposés par l'enseignant. Les visas officiels restent à obtenir.
 
 ## 1. Codage source
 | Fichier | Taille (o) | H (bits/o) | Compressé (o) | Qc | zeta | Gc (%) |
@@ -19,7 +19,7 @@ Le texte de démonstration répète un paragraphe, ce qui explique son gain éle
 | TLM-HDLC sans stuffing | 87,27 | 87,27 | 384/440 |
 | TLM-HDLC avec stuffing | variable | 85,91 | 384/447 |
 
-Pour la dernière ligne, le résultat dépend des bits. Le bloc de 48 octets utilisé a nécessité sept zéros insérés. Le rendement ne comprend pas l'en-tête du fichier ni les éventuels préambules audio des modules suivants.
+Pour la dernière ligne, le résultat dépend des bits. Le bloc de 48 octets utilisé a nécessité sept zéros insérés. Le rendement est calculé sur une trame pleine, hors en-tête de fichier.
 
 ## 3. Détection d'erreurs
 | p | Essais | Altérées | Rejetées | CRC | Autres rejets | Altérées acceptées | Altérations théoriques / 1000 |

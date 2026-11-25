@@ -14,7 +14,6 @@ type mesures\tests.txt
 if not "%TESTCODE%"=="0" goto erreur
 %PY% main.py crc || goto erreur
 %PY% main.py mesures || goto erreur
-%PY% main.py audio || goto erreur
 echo.
 echo Termine. Consultez le dossier mesures et le dossier reception.
 pause

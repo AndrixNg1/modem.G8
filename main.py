@@ -1,10 +1,8 @@
 """Commandes de démonstration : python main.py --help."""
 import argparse
-from pathlib import Path
 from crc import crc16_ccitt
 from transfert import boucle_locale
 from mesures_module1 import executer, BASE
-from audio_test import environnement, tonalite
 from config import GROUPE
 
 
@@ -19,9 +17,6 @@ def main():
     m.add_argument('--donnees', default=str(BASE/'donnees'))
     m.add_argument('--sortie', default=str(BASE/'mesures'))
     m.add_argument('--reception', default=str(BASE/'reception'))
-    sub.add_parser('environnement', help='Vérifier les bibliothèques demandées')
-    a = sub.add_parser('audio', help='Créer une tonalité WAV de 1 kHz')
-    a.add_argument('--jouer', action='store_true')
     args = parser.parse_args()
     if args.commande == 'crc':
         r = crc16_ccitt(b'123456789')
@@ -37,10 +32,6 @@ def main():
             executer()
         else:
             executer(args.donnees, args.sortie, args.reception)
-    elif args.commande == 'environnement':
-        return int(not environnement())
-    elif args.commande == 'audio':
-        tonalite(BASE/'mesures'/'tonalite_1000Hz.wav', args.jouer)
     return 0
 
 

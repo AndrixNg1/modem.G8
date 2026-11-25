@@ -3,7 +3,7 @@ UNH · Télématique L3 · Ass. Nathan MBAYO · 2026–2027
 
 Modem acoustique pédagogique en Python — groupe G8, Télématique L3 à l'UNH. Le module 1 couvre l'entropie, la compression zlib, le tramage 8N1/8E2 et TLM-HDLC, le bit stuffing et le CRC-16, avec reconstruction des fichiers en boucle locale et vérification SHA-256.
 
-La modulation FSK et l'ARQ seront traités aux séances suivantes.
+Périmètre retenu : module 1, préparation des données et test en boucle locale sans son, sur un seul PC.
 
 ## Démarrage avec l'environnement ia.labo2.0 (Linux)
 
@@ -38,22 +38,22 @@ Les trois commandes fonctionnent sans installation de bibliothèque externe. Si 
 - Pour refaire les mesures avec les fichiers fournis en séance : placer `texte.txt`, `image.png`, `aleatoire.bin` dans `donnees/` (conserver une copie des fichiers actuels). Puis relancer `python main.py mesures`. Les anciens CSV et fichiers de réception portant les mêmes noms seront remplacés.
 - Pour restaurer les fichiers de démonstration : `python generer_donnees.py` (écrase les trois fichiers du dossier `donnees/`).
 
-## Environnement et essai sonore (à la faculté)
-```powershell
+## Graphiques des mesures (facultatif)
+
+Les tests, le CRC et la boucle locale fonctionnent avec Python seul. Pour générer les graphiques des tableaux :
+
+```bash
 python -m pip install -r requirements.txt
-python main.py environnement
-python main.py audio --jouer
+python graphiques.py
 ```
-Installer Audacity séparément : https://www.audacityteam.org/ . En cas de problème de lecture directe, `python main.py audio` produit `mesures/tonalite_1000Hz.wav`. Ouvrir ce WAV dans Audacity, l'écouter à volume modéré, enregistrer au microphone et vérifier la fréquence si demandé. Le fichier WAV fourni contient une vraie sinusoïde numérique de 1 kHz, mais aucun test haut-parleur/micro n'a été effectué dans l'environnement de génération du ZIP. `sounddevice` n'y était pas disponible. Les collègues doivent vérifier localement les périphériques et remplir le journal.
 
 ## Contenu
 - `source.py` : lire les octets, entropie, zlib, en-tête TLM1.
 - `crc.py` : CRC-16/CCITT codé à la main, test de référence.
 - `trame.py` : 8N1, 8E2, conversion LSB, TLM-HDLC, stuffing et extraction.
 - `transfert.py` : découpage, en-tête, reconstruction, SHA-256.
-- `config.py` : groupe G8, adresse 0x18, N=48, f0=7400 Hz, f1=7600 Hz. Les fréquences serviront au module 2.
+- `config.py` : groupe G8, adresse 0x18, N=48 et bits de contrôle des trames.
 - `mesures_module1.py` : trois tableaux de mesures et contrôle des fichiers.
-- `audio_test.py` : diagnostic des dépendances et tonalité 1 kHz.
 - `tests/` : tests unitaires et de bout en bout (unittest).
 - `donnees/` : trois fichiers de démonstration générés, pas des fichiers distribués par le professeur.
 - `mesures/` : résultats réellement calculés et graphiques de démonstration.

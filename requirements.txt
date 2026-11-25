@@ -1,6 +1,3 @@
-# Utiles pour la vérification de l'environnement et les modules audio suivants.
-# Le module 1 (hors lecture audio directe) fonctionne avec Python seul.
-numpy
-scipy
-sounddevice
+# Le code du module 1 et ses tests utilisent uniquement la bibliothèque standard.
+# Dépendance nécessaire uniquement pour générer les graphiques de mesures.
 matplotlib
