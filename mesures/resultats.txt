@@ -1,0 +1,28 @@
+MODULE 1 - G8 | Mesures numériques en boucle locale
+
+COMPRESSION (zlib, y compris si la compression augmente la taille)
+texte.txt          2800 o | H=4.1214 | compressé=138 o | Qc=20.2899 | Gc=95.07%
+image.png         12420 o | H=7.9792 | compressé=12431 o | Qc=0.9991 | Gc=-0.09%
+aleatoire.bin      4096 o | H=7.9533 | compressé=4107 o | Qc=0.9973 | Gc=-0.27%
+
+RENDEMENTS (48 octets utiles, une trame pleine, graine 2026)
+8N1                       384/480 bits | théorie : 80.00% | mesure : 80.00%
+8E2                       384/576 bits | théorie : 66.67% | mesure : 66.67%
+TLM-HDLC sans stuffing    384/440 bits | théorie : 87.27% | mesure : 87.27%
+TLM-HDLC avec stuffing    384/447 bits | théorie : variable selon les bits | mesure : 85.91%
+
+ERREURS (1000 trames par p, graine 2026, canal simulé)
+p=1e-04 | altérées=43 | rejetées=43 (CRC=38, autres=5) | altérées acceptées=0 | théorie=43.66/1000
+p=1e-03 | altérées=370 | rejetées=370 (CRC=283, autres=87) | altérées acceptées=0 | théorie=360.21/1000
+p=1e-02 | altérées=990 | rejetées=990 (CRC=395, autres=595) | altérées acceptées=0 | théorie=988.75/1000
+
+BOUCLE LOCALE - comparaison SHA-256
+texte.txt | 4 trames | 1531 bits | compression=True | identiques=True
+  original : 5c6401bb72d27766c772441494843071c2934fdda093043b4203e1c0f736def1
+  reçu     : 5c6401bb72d27766c772441494843071c2934fdda093043b4203e1c0f736def1
+image.png | 260 trames | 115705 bits | compression=False | identiques=True
+  original : ea05f43d743e32da333d738b178d9da38bf3af565c6bf05943d5f16066042e1f
+  reçu     : ea05f43d743e32da333d738b178d9da38bf3af565c6bf05943d5f16066042e1f
+aleatoire.bin | 87 trames | 38419 bits | compression=False | identiques=True
+  original : 4c172d336360058988f0a8504b48c4fd7dcfcaa624a845e8092bc5437233189d
+  reçu     : 4c172d336360058988f0a8504b48c4fd7dcfcaa624a845e8092bc5437233189d
