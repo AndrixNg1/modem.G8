@@ -1,0 +1,10 @@
+TEB CPFSK G8 sous AWGN — séquence locale (pas la séquence officielle)
+bits=10000; graine=2026; synchronisation connue; porteuse/8N1/CRC exclus
+
+S/B demandé=  6 dB | mesuré=6.000 dB | erreurs=0 | ambigus=0 | TEB=0 | OK
+S/B demandé=  3 dB | mesuré=2.999 dB | erreurs=0 | ambigus=0 | TEB=0 | OK
+S/B demandé=  0 dB | mesuré=-0.001 dB | erreurs=0 | ambigus=0 | TEB=0 | OK
+S/B demandé= -3 dB | mesuré=-3.001 dB | erreurs=0 | ambigus=0 | TEB=0 | OK
+S/B demandé= -6 dB | mesuré=-5.998 dB | erreurs=1 | ambigus=17 | TEB=0.0001 | OK
+S/B demandé= -9 dB | mesuré=-9.001 dB | erreurs=104 | ambigus=183 | TEB=0.0104 | OK
+S/B demandé=-12 dB | mesuré=-11.995 dB | erreurs=640 | ambigus=604 | TEB=0.064 | OK
