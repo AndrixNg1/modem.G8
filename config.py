@@ -1,0 +1,14 @@
+"""Configuration centralisée du module 1 — groupe G8."""
+GROUPE = "G8"
+ADRESSE = 0x18
+N = 48
+F0 = 7400
+F1 = 7600
+FE = 48000
+R = 300
+AMPLITUDE = 0.5
+CRC_POLYNOME = 0x1021
+CRC_INIT = 0xFFFF
+
+# Réservé aux essais de compatibilité du module 2 : ne pas utiliser pour G8.
+BELL103 = {"F0": 1070, "F1": 1270, "R": 300, "FORMAT": "8N1"}

@@ -40,6 +40,34 @@ La commande affiche les deux SHA-256 et `identiques : True`. La limite actuelle 
 
 Pour recalculer les tableaux avec les fichiers de la séance, placer `texte.txt`, `image.png` et `aleatoire.bin` dans `donnees/`, puis relancer `python tests/test_module1.py --mesures`. Les résultats précédents et fichiers reçus de mêmes noms sont remplacés.
 
+## Outils ajoutés et exécution
+
+`config.py` centralise G8 : adresse `0x18`, charge utile 48 octets, f0/f1 `7400/7600 Hz`, Fe `48000 Hz`, débit `300 bauds`, amplitude `0.5`, CRC `0x1021`/`0xFFFF`. Bell 103 est isolé dans `BELL103` pour les futurs essais de compatibilité : il ne remplace jamais G8.
+
+Sous Ubuntu, créer un environnement virtuel puis installer les dépendances Python :
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+`sounddevice` peut nécessiter PortAudio fourni par le système. Le projet ne réalise aucune installation système automatique.
+
+```bash
+python main.py environnement
+python main.py crc
+python main.py boucle donnees/texte.txt
+python main.py mesures
+python graphiques.py
+python main.py audio
+python main.py audio --jouer
+```
+
+`audio` crée `mesures/tonalite_1000Hz.wav`, mono, 1 kHz, 48 kHz, deux secondes et amplitude 0,5. Sans `--jouer`, aucun périphérique n'est sollicité; l'écoute et le microphone restent des validations humaines. Les graphiques proviennent des CSV et ne sont pas des captures Audacity.
+
+Voir `docs/protocole.md`, `docs/AUDIT_MODULE1.md`, `docs/resultats_commentes.md` et les gabarits d'annexes. Les validations officielles, signatures, expériences physiques et annexes Word externes ne sont pas prétendues comme effectuées.
+
 ## Validation en séance
 
 J1 et J2 restent à faire valider par l'enseignant. Remplir le journal avec les mesures réelles, comparer à la fiche A1 et compléter les annexes applicables. Sauvegarder le dossier sur deux supports. Chaque membre doit pouvoir expliquer le code.
