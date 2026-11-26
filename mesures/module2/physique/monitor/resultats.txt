@@ -1,0 +1,14 @@
+Prétraitement G8: RMS bas de référence=5.71115e-25, seuil porteuse=0.0282842; WAV brut conservé.
+Porteuse f1 détectée; début estimé du start=108616 (2.262833 s).
+Caractère 1: start=108616, stop=110056, période=160 échantillons, bits=0010000101, confiance_stop=0.705.
+Caractère 2: start=110215, stop=111655, période=160 échantillons, bits=0111100101, confiance_stop=0.707.
+Caractère 3: start=111815, stop=113255, période=160 échantillons, bits=0011100101, confiance_stop=0.707.
+Caractère 4: start=113414, stop=114854, période=160 échantillons, bits=0010100101, confiance_stop=0.705.
+Caractère 5: start=115012, stop=116452, période=160 échantillons, bits=0111100101, confiance_stop=0.711.
+Caractère 6: start=116612, stop=118052, période=160 échantillons, bits=0101010101, confiance_stop=0.711.
+Caractère 7: start=118213, stop=119653, période=160 échantillons, bits=0010010101, confiance_stop=0.710.
+Caractère 8: start=119813, stop=121253, période=160 échantillons, bits=0000001001, confiance_stop=0.710.
+Caractère 9: start=121413, stop=122853, période=160 échantillons, bits=0111000101, confiance_stop=0.710.
+Caractère 10: start=123012, stop=124452, période=160 échantillons, bits=0000111001, confiance_stop=0.661.
+BONJOUR G8
+caractères=10, départ=108616, fin=124612, ambigus=0

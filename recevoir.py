@@ -5,7 +5,7 @@ import sys
 import numpy as np
 from scipy.io import wavfile
 from config import FE
-from emettre import profils
+from emettre import profils, ANNONCE_SECONDES
 from modem_fsk import (
     energie,
     estimer_seuil_activite,
@@ -109,7 +109,11 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
         print(f"Prétraitement {p['nom']}: RMS bas de référence={bruit:.6g}, "
               f"seuil porteuse={seuil:.6g}; WAV brut conservé.", file=sys.stderr)
     debut = synchroniser_porteuse(
-        traite, p["f0"], p["f1"], p["R"], fe, min_porteuse_bits=24)
+        # L'émetteur annonce chaque trame avec 0,3 s de f1. Exiger une large
+        # part de ce préambule empêche une brève
+        # fluctuation f0 au milieu de l'annonce d'être prise pour un start.
+        traite, p["f0"], p["f1"], p["R"], fe,
+        min_porteuse_bits=max(1, round(.75 * ANNONCE_SECONDES * p["R"])))
     if debug:
         print(f"Porteuse f1 détectée; début estimé du start={debut} "
               f"({debut / fe:.6f} s).", file=sys.stderr)
@@ -125,8 +129,16 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
     while True:
         centre = round(position)
         restant = len(traite) - centre
-        tolerance_fin = max(8, round(.04 * periode_nominale))
+        # La synchronisation peut être décalée de quelques échantillons :
+        # laisser l'ajustement local examiner le dernier caractère avant de
+        # conclure à une troncature.
+        tolerance_fin = max(24, round(.04 * periode_nominale))
         if restant < 10 * periode_nominale - tolerance_fin:
+            # Une erreur de tramage déjà relevée reste l'erreur utile à
+            # rapporter, même si la recherche de reprise aboutit près de la
+            # fin de la capture.
+            if erreurs_tramage:
+                break
             if _start_actif(traite, centre, periode_nominale, p["f0"], p["f1"], fe, seuil):
                 raise ValueError(
                     f"Transmission tronquée avant le caractère {caracteres + 1}: "
@@ -244,6 +256,11 @@ def main():
         if a.micro:
             signal, stats = enregistrer(a.duree, FE, a.device, a.enregistrement)
             print(f"acquisition : amplitude={stats['amplitude_max']:.3f}, écrêtage={stats['ecretage']}")
+            if stats["ecretage"]:
+                raise ValueError(
+                    "Acquisition saturée : réduire --volume à l'émission, "
+                    "le volume système ou le gain du microphone avant de décoder"
+                )
             resultat = recevoir_signal(signal, a.profil, not a.binaire, FE, a.debug)
         else:
             resultat = recevoir_wav(a.wav, a.profil, not a.binaire, a.debug)

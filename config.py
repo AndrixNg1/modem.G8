@@ -2,10 +2,12 @@
 GROUPE = "G8"
 ADRESSE = 0x18
 N = 48
-F0 = 7400
-F1 = 7600
+# Profil G8 acoustique : séparation large et symboles de 10 ms pour une
+# transmission fiable par haut-parleur/microphone.
+F0 = 1800
+F1 = 3600
 FE = 48000
-R = 300
+R = 100
 AMPLITUDE = 0.5
 BIT_DURATION = 1 / R
 SAMPLES_PER_BIT = FE // R

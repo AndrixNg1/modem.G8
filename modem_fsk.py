@@ -80,6 +80,16 @@ def pretraiter_signal(signal, f0, f1, fe=FE):
     if not x.size:
         return x.copy()
 
+    # Un clic isolé à pleine échelle peut faire sonner le filtre passe-bande
+    # et être pris pour un préambule.  On remplace seulement ces impulsions
+    # isolées par l'interpolation de leurs voisins; l'écrêtage durable reste
+    # signalé par les statistiques d'acquisition.
+    x = x.copy()
+    pics = np.abs(x) >= .999
+    isoles = np.zeros(len(x), dtype=bool)
+    if len(x) > 2:
+        isoles[1:-1] = pics[1:-1] & ~pics[:-2] & ~pics[2:]
+        x[isoles] = (x[:-2][isoles[1:-1]] + x[2:][isoles[1:-1]]) / 2
     x = x - float(np.mean(x))
     if f0 >= 7000 and f1 <= 8000:
         bas, haut = 7000.0, 8000.0
