@@ -42,7 +42,7 @@ Pour recalculer les tableaux avec les fichiers de la séance, placer `texte.txt`
 
 ## Outils ajoutés et exécution
 
-`config.py` centralise G8 : adresse `0x18`, charge utile 48 octets, f0/f1 `1800/3600 Hz`, Fe `48000 Hz`, débit `100 bauds`, amplitude `0.5`, CRC `0x1021`/`0xFFFF`. Cette variante est réglée pour une liaison acoustique haut-parleur/microphone. Bell 103 est isolé dans `BELL103` pour les essais de compatibilité.
+`config.py` centralise G8 : adresse `0x18`, charge utile 48 octets, f0/f1 `7400/7600 Hz`, Fe `48000 Hz`, débit `300 bauds`, amplitude `0.5`, CRC `0x1021`/`0xFFFF`. Le profil expérimental `G8_acoustique` utilise `1800/3600 Hz` à `100 bauds` pour les essais haut-parleur/microphone; il ne remplace pas le profil officiel. Bell 103 reste disponible pour les essais de compatibilité.
 
 Sous Ubuntu, créer un environnement virtuel puis installer les dépendances Python :
 

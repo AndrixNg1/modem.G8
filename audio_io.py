@@ -84,7 +84,16 @@ def jouer(signal, fe=FE, device=None, volume=1.0):
     sortie=x*volume
     if statistiques(sortie)["ecretage"]: raise ValueError("Gain refusé : écrêtage de l'émission")
     device=verifier_peripherique(device,False,fe); sd=_sd()
-    try: sd.play(sortie.astype(np.float32),fe,device=device); sd.wait()
+    try:
+        sd.play(sortie.astype(np.float32),fe,device=device)
+        # PipeWire peut ne jamais notifier sd.wait(); borner la lecture à la
+        # durée exacte du signal puis arrêter le flux explicitement.
+        time.sleep(len(sortie) / fe)
+        arreter = getattr(sd, "stop", None)
+        if arreter is not None:
+            arreter()
+        else:
+            sd.wait()
     except Exception as exc: raise RuntimeError(f"Erreur PortAudio en lecture : {exc}") from exc
     return statistiques(sortie)
 
@@ -96,7 +105,11 @@ def enregistrer(duree, fe=FE, device=None, chemin=None):
         # Certains flux PipeWire ne réveillent jamais sd.wait(). L'arrêt
         # explicite garantit que --duree reste bornée.
         time.sleep(duree)
-        sd.stop()
+        arreter = getattr(sd, "stop", None)
+        if arreter is not None:
+            arreter()
+        else:  # Compatibilité avec les doubles de test et anciens backends.
+            sd.wait()
     except Exception as exc: raise RuntimeError(f"Erreur PortAudio en acquisition : {exc}") from exc
     signal=np.asarray(signal).reshape(-1)
     if chemin:

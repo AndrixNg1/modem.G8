@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import welch
 from emettre import profils
+from config import PROFILS
 from modem_fsk import energie, estimer_seuil_activite, pretraiter_signal, synchroniser_porteuse
 
 
@@ -248,7 +249,7 @@ def afficher_rapport(mesures):
 def main():
     parser = argparse.ArgumentParser(description="Diagnostic d'un enregistrement audio réel")
     parser.add_argument("wav", help="WAV brut à analyser")
-    parser.add_argument("--profil", choices=("G8", "bell103"), default="G8")
+    parser.add_argument("--profil", choices=tuple(PROFILS), default="G8")
     parser.add_argument("--sortie", help="dossier des PNG (par défaut, dossier du WAV)")
     args = parser.parse_args()
     fe, signal = lire_wav(args.wav)

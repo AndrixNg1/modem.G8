@@ -4,8 +4,8 @@ import argparse
 import sys
 import numpy as np
 from scipy.io import wavfile
-from config import FE
-from emettre import profils, ANNONCE_SECONDES
+from config import FE, PROFILS
+from emettre import profils
 from modem_fsk import (
     energie,
     estimer_seuil_activite,
@@ -109,11 +109,11 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
         print(f"Prétraitement {p['nom']}: RMS bas de référence={bruit:.6g}, "
               f"seuil porteuse={seuil:.6g}; WAV brut conservé.", file=sys.stderr)
     debut = synchroniser_porteuse(
-        # L'émetteur annonce chaque trame avec 0,3 s de f1. Exiger une large
+        # L'émetteur annonce chaque trame avec f1. Exiger une large
         # part de ce préambule empêche une brève
         # fluctuation f0 au milieu de l'annonce d'être prise pour un start.
         traite, p["f0"], p["f1"], p["R"], fe,
-        min_porteuse_bits=max(1, round(.75 * ANNONCE_SECONDES * p["R"])))
+        min_porteuse_bits=max(1, round(.75 * p["annonce_secondes"] * p["R"])))
     if debug:
         print(f"Porteuse f1 détectée; début estimé du start={debut} "
               f"({debut / fe:.6f} s).", file=sys.stderr)
@@ -235,7 +235,7 @@ def recevoir_wav(chemin, profil="G8", decoder_utf8=True, debug=False):
 def main():
     parser = argparse.ArgumentParser(description="Récepteur WAV CPFSK + 8N1")
     parser.add_argument("wav", nargs="?")
-    parser.add_argument("--profil", choices=("G8", "bell103"), default="G8")
+    parser.add_argument("--profil", choices=tuple(PROFILS), default="G8")
     parser.add_argument("--sortie-octets", help="fichier de sauvegarde des octets reçus")
     parser.add_argument("--binaire", action="store_true", help="ne pas interpréter les octets comme UTF-8")
     parser.add_argument("--micro", action="store_true", help="acquérir puis décoder (pas une réception temps réel)")

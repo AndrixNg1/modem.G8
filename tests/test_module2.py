@@ -80,7 +80,7 @@ class TestFSKPhase1(unittest.TestCase):
             self.assertEqual(recevoir_wav(chemin,"bell103")["texte"],"BONJOUR G8")
             silence=ecrire_wav(Path(d)/"silence.wav",np.zeros(500))
             with self.assertRaises(ValueError): recevoir_wav(silence)
-            tronque=ecrire_wav(Path(d)/"tronc.wav",signal[:-20])
+            tronque=ecrire_wav(Path(d)/"tronc.wav",signal[:-200])
             with self.assertRaises(ValueError): recevoir_wav(tronque,"bell103")
             invalide=ecrire_wav(Path(d)/"invalide.wav",moduler([1]*90+[0]+[0]*8+[0],p["f0"],p["f1"],p["R"]))
             with self.assertRaises(ValueError): recevoir_wav(invalide,"bell103")

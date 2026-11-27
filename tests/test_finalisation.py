@@ -3,14 +3,16 @@ import unittest
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config import GROUPE, ADRESSE, N, F0, F1, FE, R, AMPLITUDE, CRC_POLYNOME, CRC_INIT, BELL103
+from config import GROUPE, ADRESSE, N, F0, F1, FE, R, AMPLITUDE, CRC_POLYNOME, CRC_INIT, BELL103, G8_ACOUSTIQUE, PROFILS
 from trame import construire_trame, octets_vers_bits, bits_vers_octets, analyser_corps, preparer_trames, encoder_trames, reconstruire
 from audio_test import generer_tonalite
 
 class TestFinalisation(unittest.TestCase):
     def test_configuration_g8_et_bell103(self):
         self.assertEqual((GROUPE,ADRESSE,N,F0,F1,FE,R,AMPLITUDE,CRC_POLYNOME,CRC_INIT),("G8",0x18,48,7400,7600,48000,300,.5,0x1021,0xFFFF))
-        self.assertEqual(BELL103,{"F0":1070,"F1":1270,"R":300,"FORMAT":"8N1"})
+        self.assertEqual((BELL103["f0"],BELL103["f1"],BELL103["R"],BELL103["fe"]),(1070,1270,300,48000))
+        self.assertEqual((G8_ACOUSTIQUE["f0"],G8_ACOUSTIQUE["f1"],G8_ACOUSTIQUE["R"]),(1800,3600,100))
+        self.assertEqual(set(PROFILS), {"G8", "G8_acoustique", "bell103"})
     def test_crc_erreurs_doubles_echantillon(self):
         bits=octets_vers_bits(construire_trame(ADRESSE,0,bytes(range(N)))[1:-1])
         for a,b in ((0,1),(7,200),(100,len(bits)-1)):
