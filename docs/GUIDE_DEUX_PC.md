@@ -62,13 +62,19 @@ python recevoir.py --micro --duree 15 --profil G8 --enregistrement mesures/recep
 Puis, immédiatement sur le PC A :
 
 ```bash
-python emettre.py "BONJOUR G8" --profil G8 --jouer --volume 0.5 --sortie mesures/emission_pc_a.wav
+python emettre.py "BONJOUR G8" --profil G8 --duree 3 --jouer --volume 0.5 --sortie mesures/emission_pc_a.wav
 ```
 
 Si le périphérique par défaut est incorrect, ajouter `--device INDEX` avec
 l'indice d'entrée de B ou l'indice de sortie de A obtenus par la liste.
 Attendre la fin des 15 secondes : le récepteur décode après l'acquisition,
 pas pendant. La validation est l'affichage exact de `BONJOUR G8` sur B.
+
+`--duree 3` prolonge le son à trois secondes pour ce message, sans modifier
+le débit ni répéter les données. La porteuse avant le message est allongée.
+La durée est un minimum : un message plus long n'est jamais tronqué. L'écoute
+sur B reste de quinze secondes ; ne pas attendre sa ligne `acquisition` avant
+de lancer A, car elle s'affiche seulement après l'enregistrement.
 
 Si le profil officiel 7400/7600 Hz ne passe pas sur le matériel, refaire les
 deux commandes avec `--profil G8_acoustique` (1800/3600 Hz, 100 bauds). Ce
