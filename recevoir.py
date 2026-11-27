@@ -254,6 +254,12 @@ def main():
         parser.error("WAV ou --micro requis")
     try:
         if a.micro:
+            print(
+                f"Démarrage de l'enregistrement microphone pour {a.duree:g} secondes. "
+                "Lancez l'émission sur l'autre PC dans 2 secondes ; "
+                "le décodage commencera à la fin de l'enregistrement.",
+                flush=True,
+            )
             signal, stats = enregistrer(a.duree, FE, a.device, a.enregistrement)
             print(f"acquisition : amplitude={stats['amplitude_max']:.3f}, écrêtage={stats['ecretage']}")
             if stats["ecretage"]:
