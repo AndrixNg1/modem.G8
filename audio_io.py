@@ -64,8 +64,14 @@ def verifier_peripherique(device=None, entree=False, fe=FE):
     return device
 
 def statistiques(signal):
-    x=np.asarray(signal,dtype=np.float64)
+    # Ne jamais convertir silencieusement NaN/Inf en valeurs audio : ce sont
+    # des buffers/acquisitions invalides, pas du silence ni une saturation.
+    with np.errstate(invalid="ignore", over="ignore"):
+        x=np.asarray(signal,dtype=np.float64)
     if x.ndim != 1: raise ValueError("Signal mono requis")
+    invalides=int(np.count_nonzero(~np.isfinite(x)))
+    if invalides:
+        raise ValueError(f"Acquisition invalide : {invalides}/{len(x)} échantillons non finis")
     maximum=float(np.max(np.abs(x))) if x.size else 0.0
     # Un pic isolé à pleine échelle (clic de périphérique, transitoire) ne
     # dégrade pas nécessairement une trame.  On ne qualifie d'écrêtage que
@@ -111,7 +117,15 @@ def enregistrer(duree, fe=FE, device=None, chemin=None):
         else:  # Compatibilité avec les doubles de test et anciens backends.
             sd.wait()
     except Exception as exc: raise RuntimeError(f"Erreur PortAudio en acquisition : {exc}") from exc
-    signal=np.asarray(signal).reshape(-1)
+    with np.errstate(invalid="ignore", over="ignore"):
+        signal=np.asarray(signal,dtype=np.float32).reshape(-1)
+    # Conserver un WAV de valeurs non finies serait inutilisable et masquerait
+    # un défaut du périphérique. Refuser explicitement avant toute écriture.
+    invalides=int(np.count_nonzero(~np.isfinite(signal)))
+    if invalides:
+        raise RuntimeError(
+            f"Acquisition audio invalide : {invalides}/{len(signal)} échantillons NaN/Inf. "
+            "Vérifier --device, le gain/la source PulseAudio et le routage microphone.")
     if chemin:
         chemin=Path(chemin); chemin.parent.mkdir(parents=True,exist_ok=True); wavfile.write(chemin,fe,signal)
     return signal, statistiques(signal)

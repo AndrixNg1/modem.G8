@@ -1,7 +1,7 @@
 """Modulation FSK binaire CPFSK du module 2, phase 1 (sans démodulation)."""
 import numpy as np
-from scipy.signal import butter, sosfiltfilt
 from config import AMPLITUDE, FE
+from protection_signal import pretraiter_signal as _pretraiter_protection
 
 
 def moduler(bits, f0, f1, R, fe=FE) -> np.ndarray:
@@ -70,35 +70,17 @@ def demoduler(signal, f0, f1, R, fe=FE, retourner_infos=False):
     return bits
 
 
-def pretraiter_signal(signal, f0, f1, fe=FE):
-    """Retire le continu et le bruit hors bande sans modifier le signal brut."""
-    x = np.asarray(signal, dtype=np.float64)
-    if x.ndim != 1 or not np.isfinite(x).all():
-        raise ValueError("Signal mono fini requis")
+def pretraiter_signal(signal, f0, f1, fe=FE, protection="basic", nom_profil=None,
+                       retourner_infos=False):
+    """Compatibilité historique vers le pipeline unique de protection.
+
+    ``basic`` reproduit le retrait du continu et le passe-bande précédemment
+    appliqués par ce module; ``advanced`` ajoute seulement les clics isolés.
+    """
     if not (0 < f0 < f1 < fe / 2):
         raise ValueError("Fréquences valides sous Nyquist requises")
-    if not x.size:
-        return x.copy()
-
-    # Un clic isolé à pleine échelle peut faire sonner le filtre passe-bande
-    # et être pris pour un préambule.  On remplace seulement ces impulsions
-    # isolées par l'interpolation de leurs voisins; l'écrêtage durable reste
-    # signalé par les statistiques d'acquisition.
-    x = x.copy()
-    pics = np.abs(x) >= .999
-    isoles = np.zeros(len(x), dtype=bool)
-    if len(x) > 2:
-        isoles[1:-1] = pics[1:-1] & ~pics[:-2] & ~pics[2:]
-        x[isoles] = (x[:-2][isoles[1:-1]] + x[2:][isoles[1:-1]]) / 2
-    x = x - float(np.mean(x))
-    if f0 >= 7000 and f1 <= 8000:
-        bas, haut = 7000.0, 8000.0
-    else:
-        bas, haut = max(100.0, f0 - 270.0), min(fe / 2 - 100.0, f1 + 270.0)
-    if len(x) < 32 or haut <= bas:
-        return x
-    sos = butter(4, (bas, haut), btype="bandpass", fs=fe, output="sos")
-    return sosfiltfilt(sos, x)
+    return _pretraiter_protection(signal, f0, f1, fe, nom_profil, protection,
+                                  retourner_infos=retourner_infos)
 
 
 def estimer_seuil_activite(signal, fe=FE):
@@ -147,15 +129,28 @@ def synchroniser_porteuse(signal, f0, f1, R, fe=FE, min_porteuse_bits=1):
         raise ValueError("Signal trop court pour contenir porteuse et start")
     e0 = _energies_glissantes(x, f0, fe, taille); e1 = _energies_glissantes(x, f1, fe, taille)
     niveau = np.sqrt(e0 + e1)
+    # Une alternance accidentelle entre deux corrélations peut exister dans
+    # du bruit passe-bande. La cohérence normalisée reste proche de 1 pour
+    # ce bruit, mais vaut approximativement taille/2 pour une tonalité FSK.
+    puissance = np.asarray(x, dtype=float) ** 2
+    cumul_puissance = np.concatenate(([0.0], np.cumsum(puissance)))
+    energie_fenetre = cumul_puissance[taille:] - cumul_puissance[:-taille]
+    coherence = (e0 + e1) / (energie_fenetre + np.finfo(float).eps)
+    coherence_min = 8.0
     q10, q90 = np.quantile(niveau, (.10, .90))
     seuil = max(q10 * .25, np.finfo(float).eps)
-    candidats = np.flatnonzero((e0 > 1.15 * e1) & (niveau > seuil))
+    # Un pur sinus FSK nominal garde un rapport voisin de 6 avec 160
+    # échantillons/bit; 3 laisse une marge aux échos et gains inégaux tout en
+    # rejetant les étroites coïncidences observées dans le bruit filtré.
+    contraste_min = 3.0
+    candidats = np.flatnonzero((e0 > contraste_min * e1) & (niveau > seuil)
+                              & (coherence > coherence_min))
     for candidat in candidats:
         if candidat < min_porteuse_bits * taille:
             continue
         indices = candidat - np.arange(1, min_porteuse_bits + 1) * taille
-        if (np.all(niveau[indices] > seuil)
-                and np.all(e1[indices] > 1.15 * e0[indices])):
+        if (np.all(niveau[indices] > seuil) and np.all(coherence[indices] > coherence_min)
+                and np.all(e1[indices] > contraste_min * e0[indices])):
             bas = max(min_porteuse_bits * taille, candidat - taille)
             haut = min(len(e0) - taille, candidat + taille)
             essais = np.arange(bas, haut + 1)

@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import sys
+import time
 import numpy as np
 from scipy.io import wavfile
 from config import FE, PROFILS
@@ -42,6 +43,8 @@ def _mesurer_symbole(signal, debut, periode, f0, f1, fe):
 
 def _ajuster_caractere(signal, centre, periode_nominale, f0, f1, fe, seuil, rayon=3):
     """Ajuste la phase et la période locale sur les bits start/stop et données."""
+    # La plage ±4 % couvre les échos et la dérive d'horloge, mais le score
+    # pénalise fortement ses extrêmes pour ne pas accumuler un faux recalage.
     variation = max(2, round(periode_nominale * .04))
     meilleur = None
     for periode in range(periode_nominale - variation, periode_nominale + variation + 1):
@@ -90,7 +93,8 @@ def _chercher_reprise(signal, debut, periode, p, fe, seuil):
     return None
 
 
-def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
+def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False,
+                    protection="basic", octets_attendus=None):
     """Décode une capture sans aligner les bits sur le début ni la fin du WAV."""
     p = profils(profil)
     signal = np.asarray(signal, dtype=np.float64)
@@ -98,15 +102,19 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
         raise ValueError(f"Fe WAV {fe} Hz incompatible (attendu {p['fe']} Hz)")
     if signal.ndim != 1 or not np.isfinite(signal).all():
         raise ValueError("Signal mono fini requis")
+    if octets_attendus is not None and (not isinstance(octets_attendus, int) or octets_attendus < 1):
+        raise ValueError("octets_attendus doit être un entier positif")
     if not np.any(np.abs(signal) > 1e-12):
         raise ValueError("Signal silencieux : aucune transmission détectée")
 
     brut = signal.copy()
-    traite = pretraiter_signal(brut, p["f0"], p["f1"], fe)
+    traite, protection_infos = pretraiter_signal(
+        brut, p["f0"], p["f1"], fe, protection=protection,
+        nom_profil=p["nom"], retourner_infos=True)
     seuil, bruit = estimer_seuil_activite(traite, fe)
     periode_nominale = fe // p["R"]
     if debug:
-        print(f"Prétraitement {p['nom']}: RMS bas de référence={bruit:.6g}, "
+        print(f"Protection={protection}; prétraitement {p['nom']}: RMS bas de référence={bruit:.6g}, "
               f"seuil porteuse={seuil:.6g}; WAV brut conservé.", file=sys.stderr)
     debut = synchroniser_porteuse(
         # L'émetteur annonce chaque trame avec f1. Exiger une large
@@ -123,10 +131,18 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
     energies_recues = []
     debuts_caracteres = []
     erreurs_tramage = []
+    avertissements = []
+    niveaux_starts_valides = []
     position = debut
     periode_estimee = float(periode_nominale)
     caracteres = 0
     while True:
+        # Cette limite est un contrat applicatif explicite (p. ex. message de
+        # démonstration connu), jamais une aide à la synchronisation ni à une
+        # décision de bit. Elle évite d'interpréter la réverbération suivant
+        # une fin de message déjà intégralement validée.
+        if octets_attendus is not None and len(octets) >= octets_attendus:
+            break
         centre = round(position)
         restant = len(traite) - centre
         # La synchronisation peut être décalée de quelques échantillons :
@@ -153,7 +169,11 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
                     f"Transmission tronquée avant le caractère {caracteres + 1}: "
                     f"{max(0, restant)} échantillons après le début du bit de start")
             break
-        if ajuste["confiances"][0] >= -.05:
+        # Un start doit être franchement f0. Le seuil historique -0,05
+        # laissait les échos de la garde f1 créer de faux caractères après le
+        # dernier stop valide; -0,15 conserve les starts mesurés et rejette
+        # cette queue de transmission.
+        if ajuste["confiances"][0] >= -.15:
             break
 
         bits = ajuste["bits"]
@@ -187,6 +207,20 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
                 detail += "; aucune reprise 8N1 valide détectée"
             if debug:
                 print(detail, file=sys.stderr)
+            # Après une série valide, une décision stop presque indécise et
+            # nettement plus faible que les starts précédents est typique du
+            # bruit/de la réverbération de fin de capture. Ne pas la présenter
+            # comme un caractère corrompu; les inversions franches restent des
+            # erreurs de tramage, donc ne sont jamais masquées.
+            reference_start = float(np.median(niveaux_starts_valides)) if niveaux_starts_valides else None
+            if (reference_start is not None and abs(confiance_stop) < .15
+                    and ajuste["niveau_start"] < .5 * reference_start):
+                caracteres -= 1
+                debuts_caracteres.pop()
+                del bits_recus[-10:]
+                del energies_recues[-10:]
+                avertissements.append("Queue de capture ambiguë ignorée après trame 8N1 valide")
+                break
             erreurs_tramage.append(detail)
             if reprise is None:
                 raise ValueError(f"Erreur de tramage 8N1 : {detail}")
@@ -195,6 +229,7 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
 
         octet = sum(bits[i + 1] << i for i in range(8))
         octets.append(octet)
+        niveaux_starts_valides.append(ajuste["niveau_start"])
         periode_estimee = (periode_estimee * (caracteres - 1) + ajuste["periode"]) / caracteres
         position = ajuste["debut"] + 10 * periode_estimee
 
@@ -222,14 +257,18 @@ def recevoir_signal(signal, profil="G8", decoder_utf8=True, fe=FE, debug=False):
         "bits": bits_recus,
         "ambigus": ambigus,
         "energies": energies_recues,
+        "confiances": [abs(e1 - e0) / (e0 + e1 + np.finfo(float).eps)
+                        for e0, e1 in energies_recues],
+        "avertissements": avertissements,
+        "protection": protection_infos,
         "octets": bytes(octets),
         "texte": texte,
     }
 
 
-def recevoir_wav(chemin, profil="G8", decoder_utf8=True, debug=False):
+def recevoir_wav(chemin, profil="G8", decoder_utf8=True, debug=False, protection="basic", octets_attendus=None):
     fe, signal = lire_wav(chemin)
-    return recevoir_signal(signal, profil, decoder_utf8, fe, debug)
+    return recevoir_signal(signal, profil, decoder_utf8, fe, debug, protection, octets_attendus)
 
 
 def main():
@@ -240,10 +279,15 @@ def main():
     parser.add_argument("--binaire", action="store_true", help="ne pas interpréter les octets comme UTF-8")
     parser.add_argument("--micro", action="store_true", help="acquérir puis décoder (pas une réception temps réel)")
     parser.add_argument("--duree", type=float, default=10.0)
+    parser.add_argument("--delai-depart", type=float, default=2.0,
+                        help="attente avant de commencer la capture microphone (secondes)")
     parser.add_argument("--device")
     parser.add_argument("--enregistrement", help="WAV brut acquis")
     parser.add_argument("--liste-peripheriques", action="store_true")
     parser.add_argument("--debug", action="store_true", help="afficher les mesures et la synchronisation")
+    parser.add_argument("--protection", choices=("off", "basic", "advanced"), default="basic",
+                        help="off=brut, basic=passe-bande historique, advanced=basic+clics isolés")
+    parser.add_argument("--attendu", help="texte attendu : borne la réception après ses octets UTF-8, puis vérifie le résultat")
     a = parser.parse_args()
     if a.liste_peripheriques:
         print(formater_peripheriques())
@@ -252,14 +296,20 @@ def main():
         parser.error("choisir WAV ou --micro, pas les deux")
     if not a.micro and not a.wav:
         parser.error("WAV ou --micro requis")
+    if a.delai_depart < 0:
+        parser.error("--delai-depart doit être positif ou nul")
+    if a.attendu is not None and a.binaire:
+        parser.error("--attendu est incompatible avec --binaire")
+    longueur_attendue = len(a.attendu.encode("utf-8")) if a.attendu is not None else None
     try:
         if a.micro:
             print(
-                f"Démarrage de l'enregistrement microphone pour {a.duree:g} secondes. "
-                "Lancez l'émission sur l'autre PC dans 2 secondes ; "
+                f"La capture microphone de {a.duree:g} s commencera dans {a.delai_depart:g} s. "
+                f"Lancez l'émission sur l'autre PC dans {a.delai_depart:g} s ; "
                 "le décodage commencera à la fin de l'enregistrement.",
                 flush=True,
             )
+            time.sleep(a.delai_depart)
             signal, stats = enregistrer(a.duree, FE, a.device, a.enregistrement)
             print(f"acquisition : amplitude={stats['amplitude_max']:.3f}, écrêtage={stats['ecretage']}")
             if stats["ecretage"]:
@@ -267,13 +317,15 @@ def main():
                     "Acquisition saturée : réduire --volume à l'émission, "
                     "le volume système ou le gain du microphone avant de décoder"
                 )
-            resultat = recevoir_signal(signal, a.profil, not a.binaire, FE, a.debug)
+            resultat = recevoir_signal(signal, a.profil, not a.binaire, FE, a.debug, a.protection, longueur_attendue)
         else:
-            resultat = recevoir_wav(a.wav, a.profil, not a.binaire, a.debug)
+            resultat = recevoir_wav(a.wav, a.profil, not a.binaire, a.debug, a.protection, longueur_attendue)
     except (OSError, RuntimeError, ValueError) as exc:
         parser.error(str(exc))
     if a.sortie_octets:
         Path(a.sortie_octets).write_bytes(resultat["octets"])
+    if a.attendu is not None and resultat["texte"] != a.attendu:
+        parser.error("Le texte reçu ne correspond pas à --attendu")
     if resultat["texte"] is not None:
         print(resultat["texte"])
     else:

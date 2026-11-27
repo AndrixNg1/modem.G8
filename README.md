@@ -95,6 +95,39 @@ Voir la [phase 3](docs/MODULE3_PHASE3.md) et le [guide pratique pour deux PC](do
 donne les commandes du premier test sonore et distingue celui-ci d'un transfert
 de fichier avec ACK/NAK audio, encore à implémenter.
 
+## Protection contre le bruit
+
+La réception WAV accepte `--protection off|basic|advanced`. `basic` conserve le
+passe-bande historique et est le défaut; `advanced` ajoute uniquement la
+neutralisation prudente des clics isolés. Les détails, résultats AWGN
+reproductibles et limites sont dans [OPTIMISATION_PROTECTION_SIGNAL.md](docs/OPTIMISATION_PROTECTION_SIGNAL.md).
+
+```bash
+python recevoir.py capture.wav --profil G8 --protection basic
+python mesures_protection_signal.py --essais 20
+python mesures_acoustiques.py --essais 3
+python enregistrer_bruit_ambiant.py --categorie ventilateur --duree 30 --device 2
+python campagne_faux_positifs.py --captures 100
+```
+
+Les perturbations de la phase 2 sont synthétiques et reproductibles; les
+captures microphone ne sont créées que par la dernière commande. Voir la
+[documentation de protection](docs/OPTIMISATION_PROTECTION_SIGNAL.md) pour le
+protocole entre deux PC et les limites ARQ physiques.
+
+Pour analyser une capture réellement obtenue avec les trois protections, sans
+utiliser la référence pendant le décodage :
+
+```bash
+python analyser_capture_physique.py capture.wav --profil G8 --reference "message de test" --archiver
+```
+
+## ARQ audio semi-duplex
+
+Le transfert audio entre deux PC est disponible via [transfert_audio.py](transfert_audio.py).
+Les commandes exactes, l'architecture, la convention SHA-256 et les limites
+matérielles sont dans [CANAL_ARQ_PHYSIQUE.md](docs/CANAL_ARQ_PHYSIQUE.md).
+
 ## Validation en séance
 
 J1 et J2 restent à faire valider par l'enseignant. Remplir le journal avec les mesures réelles, comparer à la fiche A1 et compléter les annexes applicables. Sauvegarder le dossier sur deux supports. Chaque membre doit pouvoir expliquer le code.

@@ -7,7 +7,7 @@
 **Groupe :** G8  
 **Projet :** Modem acoustique  
 **Dernière actualisation :** 27 novembre 2026  
-**Branche Git actuelle :** `main`<br>
+**Branche Git actuelle :** `feature/noise-protection`<br>
 **Commit de base vérifié :** `28012ac` — `feat: module 3 phase 2 ARQ FSK et mesures AWGN`. Les corrections et la phase 3 décrites ci-dessous sont des modifications locales non encore commitées.
 
 ## Objectif
@@ -46,8 +46,44 @@ Transmettre un fichier entre deux ordinateurs exclusivement par un canal sonore,
 | Module 1 numérique | **TERMINÉ** dans son périmètre local, sans validation officielle |
 | Module 2 | **PARTIELLEMENT TERMINÉ** : émission/démodulation/simulation disponibles; canal physique non stable ni validé |
 | Module 3 | **PARTIELLEMENT TERMINÉ** : ARQ/FSK et transfert complet de fichiers simulés; canal ARQ audio physique restant |
-| Suite actuelle | **100 tests réussis, 0 échec, 0 ignoré**, durée observée 43,518 s |
+| Suite actuelle | **113 tests réussis, 14 sous-tests réussis**, durée observée 42,71 s |
 | Validation enseignant | J1–J7 non déclarés acquis sans preuve réelle |
+
+### Protection contre les bruits extérieurs — 27 novembre 2026
+
+Une couche DSP unique `protection_signal.py` a été ajoutée sans changement des
+fréquences, débits, trames HDLC, CRC ou ARQ. Elle centralise le retrait DC, les
+filtres Butterworth SOS par profil, l'estimation explicite du bruit, la mesure
+S/B, les clics/saturations et la confiance I/Q. Les modes comparables sont
+`off`, `basic` et `advanced`; aucune compensation de fréquence non validée ni
+annulation d'écho n'est activée. Une campagne AWGN de 20 essais/niveau montre
+un TEB à -12 dB de 0,05813 (`off`) et 0,04313 (`basic`/`advanced`). Voir
+[l'optimisation détaillée](OPTIMISATION_PROTECTION_SIGNAL.md), le CSV et le
+graphique associés. Ces résultats sont des simulations, jamais des essais
+physiques.
+
+La phase 2 ajoute un simulateur de perturbations acoustiques, un enregistreur
+optionnel de bruit ambiant réel à 48 kHz et une campagne rapide appariée des
+trois profils. Une faiblesse de faux préambule sur bruit passe-bande a été
+mesurée puis réduite par une validation de cohérence et de contraste I/Q dans
+la synchronisation. Les mesures physiques, retransmissions ARQ audio et débit
+utile physique restent non réalisés et ne sont pas déclarés acquis.
+
+La phase 3 a reproduit les faux préambules synthétiques, identifié une
+coïncidence de bruit étroit après passe-bande, puis relevé le contraste I/Q de
+2 à 3 sans modifier les profils ni le protocole. Une campagne de 100 captures
+sans transmission par profil donne 0 faux préambule sur les trois modes (900
+analyses). C'est une validation logicielle brève, non une mesure physique.
+`analyser_capture_physique.py` compare désormais une capture WAV réelle avec
+référence post-décodage seulement. Le canal ARQ audio semi-duplex, les ACK/NAK
+physiques et SHA-256 sur l'air restent non réalisés.
+
+La phase 4 introduit `canal_audio_arq.py` et `transfert_audio.py` : une
+machine semi-duplex transmet désormais I, ACK et NAK par les primitives audio,
+avec protection DSP sélectionnable et SHA-256 transporté dans la charge utile.
+La valeur d'acquisition 2,168 est traitée comme saturation réelle de float32,
+jamais normalisée silencieusement. Les tests utilisent des mocks; une
+validation sur deux PC reste à exécuter et consigner.
 
 > Une simulation est une prédiction ou une mesure numérique. Elle ne constitue pas un essai physique ni une validation officielle.
 

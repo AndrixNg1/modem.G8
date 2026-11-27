@@ -1,14 +1,16 @@
 """Canal FSK local pour ARQ : HDLC binaire → CPFSK → démodulation → HDLC."""
 import numpy as np
 from emettre import profils
-from modem_fsk import moduler, demoduler, ajouter_bruit
+from modem_fsk import moduler, demoduler, ajouter_bruit, pretraiter_signal
 from trame import trame_vers_bits, analyser_flux
 
 SYNC = [1, 0] * 16  # convention provisoire documentée, hors données HDLC
 
 class CanalFSK:
-    def __init__(self, profil="G8", actions=(), sb_db=None, seed=2026):
-        self.p=profils(profil); self.actions=list(actions); self.sb_db=sb_db; self.seed=seed; self.temps=0.; self.evenements=[]
+    def __init__(self, profil="G8", actions=(), sb_db=None, seed=2026, protection="off"):
+        if protection not in {"off", "basic", "advanced"}:
+            raise ValueError("protection attend off, basic ou advanced")
+        self.p=profils(profil); self.actions=list(actions); self.sb_db=sb_db; self.seed=seed; self.protection=protection; self.temps=0.; self.evenements=[]
         self.bits_bruts_transmis = 0
         self.bits_bruts_errones = 0
         self.bits_bruts_perdus = 0
@@ -41,6 +43,9 @@ class CanalFSK:
             else:
                 graine = int(np.random.SeedSequence([self.seed, *self._contexte, int(sens == 'ack')]).generate_state(1)[0])
             signal,_=ajouter_bruit(signal,self.sb_db,graine,True)
+        if self.protection != "off":
+            signal = pretraiter_signal(signal, self.p['f0'], self.p['f1'], self.p['fe'],
+                                        protection=self.protection, nom_profil=self.p['nom'])
         recus=demoduler(signal,self.p['f0'],self.p['f1'],self.p['R'],self.p['fe'])
         # TEB avant CRC, sur toutes les transmissions effectivement modulées,
         # y compris les retransmissions et les acquittements. Alignement connu.

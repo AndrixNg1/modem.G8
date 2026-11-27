@@ -44,10 +44,12 @@ def signal_bits(bits, profil="G8", duree=None):
     return moduler(_avec_annonce(valeurs,p,duree),p["f0"],p["f1"],p["R"],p["fe"]), valeurs, p
 
 def ajouter_garde_fin(signal, profil="G8"):
-    """Ajoute une garde f1 de fin pour préserver la fin de lecture audio."""
+    """Ajoute une garde de silence pour préserver la fin sans faux start."""
     p = profils(profil)
-    garde = moduler([1] * int(p["garde_fin_secondes"] * p["R"]),
-                    p["f0"], p["f1"], p["R"], p["fe"])
+    # Une garde f1 protège la lecture mais, après passage acoustique, ses
+    # échos peuvent ressembler à un bit start f0 et créer un caractère fantôme
+    # après le dernier octet. Du silence a la même fonction de marge de sortie.
+    garde = np.zeros(round(p["garde_fin_secondes"] * p["fe"]), dtype=np.float64)
     return np.concatenate((np.asarray(signal, dtype=np.float64), garde))
 
 def ecrire_wav(chemin, signal, fe=FE):

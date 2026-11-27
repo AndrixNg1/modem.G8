@@ -1,0 +1,10 @@
+profil,mode,essais,fausses_detections
+G8,off,20,0
+G8,basic,20,0
+G8,advanced,20,0
+G8_acoustique,off,20,0
+G8_acoustique,basic,20,0
+G8_acoustique,advanced,20,0
+bell103,off,20,0
+bell103,basic,20,0
+bell103,advanced,20,0
