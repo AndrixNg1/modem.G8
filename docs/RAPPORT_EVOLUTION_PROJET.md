@@ -7,8 +7,8 @@
 **Groupe :** G8  
 **Projet :** Modem acoustique  
 **Dernière actualisation :** 27 novembre 2026  
-**Branche Git actuelle :** `feature/module3-arq`  
-**Dernier commit vérifié :** `b999f38` — `module3-phase2` — 27 novembre 2026 à 09:44:59 (+02:00)
+**Branche Git actuelle :** `main`<br>
+**Commit de base vérifié :** `28012ac` — `feat: module 3 phase 2 ARQ FSK et mesures AWGN`. Les corrections et la phase 3 décrites ci-dessous sont des modifications locales non encore commitées.
 
 ## Objectif
 
@@ -45,8 +45,8 @@ Transmettre un fichier entre deux ordinateurs exclusivement par un canal sonore,
 | Développement | **PARTIELLEMENT TERMINÉ** |
 | Module 1 numérique | **TERMINÉ** dans son périmètre local, sans validation officielle |
 | Module 2 | **PARTIELLEMENT TERMINÉ** : émission/démodulation/simulation disponibles; canal physique non stable ni validé |
-| Module 3 | **PARTIELLEMENT TERMINÉ** : ARQ déterministe et ARQ/FSK simulés; transfert complet fichier/audio physique restant |
-| Suite actuelle | **87 tests réussis, 0 échec, 0 ignoré**, durée observée 34,861 s |
+| Module 3 | **PARTIELLEMENT TERMINÉ** : ARQ/FSK et transfert complet de fichiers simulés; canal ARQ audio physique restant |
+| Suite actuelle | **100 tests réussis, 0 échec, 0 ignoré**, durée observée 43,518 s |
 | Validation enseignant | J1–J7 non déclarés acquis sans preuve réelle |
 
 > Une simulation est une prédiction ou une mesure numérique. Elle ne constitue pas un essai physique ni une validation officielle.
@@ -79,8 +79,8 @@ flowchart LR
 - **TLM-HDLC :** adresse, contrôle, longueur, données, CRC, fanions, stuffing local.
 - **CRC :** contrôle CRC-16/CCITT-FALSE avant remise au récepteur ARQ.
 - **ARQ :** N(S)/N(R), ACK/NAK, temporisation et retransmission.
-- **CPFSK :** annonce porteuse, phase continue, tramage 8N1.
-- **Démodulation :** corrélations I/Q à f0/f1, puis synchronisation et extraction 8N1.
+- **CPFSK :** phase continue. Les messages du module 2 utilisent annonce porteuse et 8N1 ; le canal ARQ simulé transporte directement les bits HDLC avec stuffing et sa synchronisation provisoire.
+- **Démodulation :** corrélations I/Q à f0/f1. Synchronisation/extraction 8N1 pour les messages ; alignement connu et extraction HDLC dans la simulation ARQ.
 - **Reconstruction :** assemblage des charges utiles dans l'ordre, en ignorant les doublons.
 - **Décompression :** restauration uniquement si l'en-tête indique la compression.
 - **SHA-256 :** comparaison finale entre empreinte originale et reçue.
@@ -131,7 +131,8 @@ Le profil `G8_acoustique` a été introduit après les faibles énergies et erre
 | 26/11/2026 | 2 | Phase 4 | Préparer audio physique | Périphériques, WAV bruts, diagnostic | `audio_io.py`, `diagnostic_audio.py` | Outils disponibles | 61-86 à confirmer | PulseAudio/PipeWire/saturation/écho | EN COURS |
 | 27/11/2026 | 3 | Phase 1 | ARQ stop-and-wait | I, ACK, NAK, doublons, timeout | `arq.py`, `tests/test_arq.py` | Scénarios déterministes validés | Incluse dans 87 | Simulation uniquement | TERMINÉ simulé |
 | 27/11/2026 | 3 | Phase 2 | Intégrer ARQ/FSK | I/ACK/NAK via FSK | `canal_fsk.py`, `tests/test_arq_fsk.py` | Chaîne locale testée | Incluse dans 87 | AWGN/physique non intégré | TERMINÉ simulé |
-| 27/11/2026 | 3 | Phases 3-7 | Finalisation | Fichiers, air, jalons | À compléter | Non réalisé | — | Beaucoup de validations restant | NON COMMENCÉ/BLOQUÉ |
+| 27/11/2026 | 3 | Phase 3 | Transférer un fichier complet en simulation | TLM1/zlib → ARQ/FSK → reconstruction/SHA-256 | `transfert_fichier.py`, `main.py`, tests | TXT/CSV/PNG/ZIP/BIN/vide/1 Kio/2 Kio exacts | Suite de 100 tests | Aucun canal audio réel dans cette commande | TERMINÉ simulé |
+| 27/11/2026 | 3 | Phases 4-7 | Finalisation physique | Air, câble, ACK/NAK réels, jalons | À compléter | Non réalisé | — | Canal semi-duplex à implémenter | NON TERMINÉ |
 
 Les valeurs 46, 50, 61, 62, 73, 83 et 86 sont mentionnées dans la demande historique mais ne sont pas confirmées par un document vérifié dans ce dépôt. Elles sont conservées comme jalons à confirmer, sans prétendre qu'elles représentent un résultat actuel.
 
@@ -323,7 +324,9 @@ Ces résultats sont strictement simulés dans `CanalSimule`.
 
 La séquence alternée est provisoire et ne remplace pas une spécification officielle. Les erreurs déterministes sont injectées avant ou après modulation selon le canal; les erreurs AWGN sont produites après modulation.
 
-### 7.3 Campagnes AWGN ARQ
+### 7.3 Campagnes AWGN ARQ historiques
+
+Les résultats de cette sous-section sont conservés comme historique. La nouvelle campagne corrigée figure à la sous-section 7.3 bis ; ne pas mélanger les deux.
 
 Les deux campagnes appariées portent sur 144 octets, 20 essais par niveau, 140 transferts avec ARQ et 140 sans retransmission, graine 2026, profil G8.
 
@@ -338,6 +341,21 @@ Les deux campagnes appariées portent sur 144 octets, 20 essais par niveau, 140 
 | -12 dB | 0/20 | 0/20 | 0 point | 80 |
 
 À -6 dB l'ARQ augmente le nombre de transferts réussis. Aux niveaux -9/-12 dB, les perturbations dépassent la capacité de compensation et les 20 essais sont abandonnés après cinq tentatives. Résultats dans [synthese_awgn.csv](../mesures/module3/simulation/synthese_awgn.csv).
+
+### 7.3 bis — Corrections et nouvelle campagne du 27 novembre
+
+Les timeouts sont désormais comptés une seule fois par l'émetteur. Les ACK invalides attendent le timeout ; les NAK valides déclenchent une reprise immédiate. Les compteurs du récepteur sont conservés même lors d'un abandon.
+
+Le TEB est mesuré avant CRC sur les bits démodulés, dans les deux sens et retransmissions incluses, avec alignement connu. La différence de charge après CRC utilise le XOR bit par bit et distingue pertes/insertions ; elle n'est pas présentée comme le TEB physique. Les graines de bruit sont indépendantes par essai/bloc/tentative/sens et appariées sur la première émission d'un même bloc.
+
+| S/B | Avec ARQ | Sans retransmission | Retransmissions | Abandons ARQ |
+|---:|---:|---:|---:|---:|
+| +6 à −3 dB | 20/20 par niveau | 20/20 par niveau | 0 | 0 |
+| −6 dB | 20/20 | 11/20 | 13 | 0 |
+| −9 dB | 0/20 | 0/20 | 80 | 20 |
+| −12 dB | 0/20 | 0/20 | 80 | 20 |
+
+Preuves : [synthese_awgn.csv](../mesures/module3/simulation_corrigee/synthese_awgn.csv), [comparaison ARQ](../mesures/module3/simulation_corrigee/taux_reussite_avec_sans_arq.png) et [phase 3](MODULE3_PHASE3.md). Les anciens CSV et graphiques restent intacts.
 
 ### 7.4 Limites à auditer
 
@@ -365,9 +383,10 @@ Les deux campagnes appariées portent sur 144 octets, 20 essais par niveau, 140 
 | Reconstruction | IMPLÉMENTÉ localement |
 | Décompression | IMPLÉMENTÉ |
 | SHA-256 | IMPLÉMENTÉ localement |
-| Chaîne ARQ/audio fichier complet | NON INTÉGRÉE bout en bout |
+| Chaîne fichier ARQ/FSK simulée | INTÉGRÉE et testée via `main.py fichier-simuler` |
+| Chaîne fichier ARQ audio entre deux PC | NON IMPLÉMENTÉE |
 
-Prévoir les tests TXT, CSV, PNG, ZIP, BIN, fichier vide, 1 Kio et 2 Kio.
+Tests TXT, CSV, PNG, ZIP, BIN, fichier vide, 1 Kio et 2 Kio réussis. Compression, tailles, nom, SHA-256, doublons, abandon et protection des fichiers existants contrôlés. Voir [MODULE3_PHASE3.md](MODULE3_PHASE3.md).
 
 ### 7.6 Phase 4 — Communication physique
 
@@ -412,19 +431,20 @@ J6/J7 exigent une démonstration ARQ puis un transfert par l'air d'un fichier de
 | Audit initial | 33 | Module 1 | Confirmé dans l'audit historique |
 | Finalisation G8 | 39 | CRC, 48/49 octets, UTF-8, configuration/WAV/import | Confirmé |
 | Module 2 AWGN | 56 | Mesures 10 000 bits et graphes | Confirmé par le document |
-| Suite actuelle | 87 | 8 fichiers test; ARQ/FSK/audio robuste/finalisation | Confirmé aujourd'hui |
+| Audit précédent | 87 | 8 fichiers de tests | Historique conservé |
+| Suite actuelle | 100 | 10 fichiers de tests ; mesures corrigées et fichiers complets inclus | Confirmé le 27/11/2026 |
 | Étapes 46,50,61,62,73,83,86 | À confirmer | Fonctionnalités non identifiées par des preuves versionnées | Historique non vérifiable |
 
 Commande exécutée : `python -m unittest discover -s tests -v`
 
-- Total : 87
-- Réussis : 87
+- Total : 100
+- Réussis : 100
 - Échecs : 0
 - Ignorés : 0
-- Durée : 34,861 s
+- Durée : 43,518 s
 - Date : 27 novembre 2026
 
-Tests restant à ajouter : transferts bout en bout TXT/CSV/PNG/ZIP/BIN/vide/1 Kio/2 Kio, ACK/NAK réellement audio, perte/duplication physique, temps réels, bande passante, S/B mesuré, TEB à distance et validation intergroupes.
+Tests restant à ajouter : ACK/NAK réellement audio, perte/duplication physique, temps réels, bande passante, S/B mesuré, TEB à distance et validation intergroupes.
 
 ## 10. Inventaire des fichiers
 
@@ -438,6 +458,7 @@ modem.G8/
 ├── trame.py
 ├── modem_fsk.py
 ├── canal_fsk.py
+├── transfert_fichier.py
 ├── arq.py
 ├── emettre.py
 ├── emmettre.py
@@ -471,6 +492,7 @@ modem.G8/
 | [modem_fsk.py](../modem_fsk.py) | 2/3 | CPFSK/démodulation | `moduler`, `demoduler`, synchronisation | Confirmé |
 | [arq.py](../arq.py) | 3 | Stop-and-wait | `EmetteurARQ`, `RecepteurARQ`, `CanalSimule` | Confirmé simulé |
 | [canal_fsk.py](../canal_fsk.py) | 3 | ARQ/FSK | `CanalFSK` | Confirmé simulé |
+| [transfert_fichier.py](../transfert_fichier.py) | 3 | Fichier complet simulé | `preparer_paquet`, `decoder_paquet`, `simuler_fichier` | Confirmé par tests et SHA-256 |
 | [audio_io.py](../audio_io.py) | 2 | Sounddevice/WAV | `jouer`, `enregistrer`, `statistiques` | Confirmé tests |
 | [recevoir.py](../recevoir.py) | 2 | CLI réception | lecture, synchronisation, décodage | Confirmé fichiers locaux |
 | [emettre.py](../emettre.py) | 2 | CLI émission | profils, WAV, lecture | Confirmé fichiers locaux |
@@ -490,6 +512,8 @@ Les anciens documents sont conservés; les caches `__pycache__`, `.venv` et fich
 | M6 | 2 | G8 | WAV physique reçu | FSK officiel non détectable | [MODULE2_CORRECTION_ROBUSTESSE.md](./MODULE2_CORRECTION_ROBUSTESSE.md) | Pas de porteuse fiable | Expérience physique à poursuivre |
 | M7 | 3 | G8 | AWGN apparié | ARQ 20/20 jusqu'à -6 dB | [synthese_awgn.csv](../mesures/module3/simulation/synthese_awgn.csv) | ARQ améliore -6 dB | Abandon -9/-12 dB; simulé |
 
+Les transferts complets de démonstration sont archivés dans [transfert_fichier_g8.json](../mesures/module3/transfert_fichier_g8.json) et [transfert_fichier_g8_perte_ack.json](../mesures/module3/transfert_fichier_g8_perte_ack.json). Le second contient une retransmission, un doublon ignoré et des SHA-256 identiques. Ces preuves restent des simulations locales.
+
 ## 12. Tableau général de synthèse des performances
 
 | Canal | Profil | Bauds | S/B mesuré | TEB | Débit utile | Shannon | Statut | Preuve |
@@ -505,7 +529,7 @@ Formules :
 
 - TEB = (bits erronés + pertes + insertions) / nombre de bits transmis.
 - S/B = `10 log10(Ps/Pb)`.
-- Débit utile = octets d'information correctement acceptés / durée réelle.
+- Débit utile en bit/s = `8 × octets utiles / durée`. Le débit simulé n'est pas une mesure réelle ; un transfert abandonné a un débit utile nul dans la campagne corrigée.
 - Rendement = bits utiles / bits transmis.
 - Capacité de Shannon : `C=B log2(1+S/N)` en bit/s.
 
@@ -519,7 +543,7 @@ Formules :
 | J4 réception FSK | 2 | Démodulation | Boucles locales | TERMINÉ logiciel | En attente | Essai externe officiel |
 | J5 canal physique | 2 | Outils audio | WAV historiques | PARTIELLEMENT | En attente | Câble/air/S/B/distance |
 | J6 ARQ | 3 | Simulateur | Tests AWGN | TERMINÉ simulé | En attente | Démonstration réelle |
-| J7 transfert fichier | 3 | Composants séparés | Boucle locale module 1 | BLOQUÉ | En attente | Chaîne complète + intergroupe |
+| J7 transfert fichier | 3 | Chaîne complète simulée | Phase 3 et SHA-256 | TERMINÉ simulé seulement | En attente | Canal audio réel + intergroupe |
 | Fiche A1 | 1 | Gabarit | `annexe_A1.md` | À compléter | En attente | Réponses/visa |
 | Fiche A2 | 2 | Gabarit absent | — | NON COMMENCÉ | En attente | Fiche/captures |
 | Fiche A3 | 3 | Gabarit absent | — | NON COMMENCÉ | En attente | ARQ/canal |
@@ -534,8 +558,9 @@ Formules :
 | Module 2 phases 1-3 | TERMINÉ | Simulation/boucles terminées | TERMINÉ | J3/J4 à valider |
 | Module 2 phase 4 | PARTIELLEMENT TERMINÉ | EN COURS | PARTIELLEMENT | J5 en attente |
 | Module 3 phases 1-2 | TERMINÉ simulé | Simulation disponible | TERMINÉ | J6 non validé |
-| Module 3 phases 3-7 | EN COURS/PARTIEL | NON COMMENCÉ | PARTIELLEMENT | J6/J7 en attente |
-| Rapport | TERMINÉ initialement | À actualiser | TERMINÉ | À viser |
+| Module 3 phase 3 | TERMINÉ simulé | Tests locaux réalisés | DOCUMENTÉ | J6/J7 non validés |
+| Module 3 phases 4-7 | NON TERMINÉ | Canal physique à implémenter/mesurer | Guide deux PC disponible | J6/J7 en attente |
+| Rapport | ACTUALISÉ après corrections | À actualiser | TERMINÉ | À viser |
 
 Aucun pourcentage global n'est attribué, car aucune liste de jalons pondérés vérifiés n'a été fournie par l'enseignant.
 
@@ -543,7 +568,7 @@ Aucun pourcentage global n'est attribué, car aucune liste de jalons pondérés 
 
 ### P0 — Obligatoire et bloquant
 
-- [ ] Finaliser l'intégration lecture/compression/découpage/CRC/ARQ/FSK/reconstruction/décompression/SHA.
+- [x] Finaliser l'intégration lecture/compression/découpage/CRC/ARQ/FSK/reconstruction/décompression/SHA **en simulation locale**.
   - **Prérequis :** composants actuels stabilisés.
   - **Fichiers :** `main.py`, `arq.py`, `canal_fsk.py`, `source.py`, `trame.py`, `modem_fsk.py`, `recevoir.py`.
   - **Critère :** fichier égal à l'original pour TXT, CSV, PNG, ZIP, BIN, vide, 1 Kio et 2 Kio.
@@ -613,7 +638,7 @@ Toutes les commandes dépendantes du matériel exigent PortAudio/Sounddevice et 
 | zlib | Compression standard | Réversible et disponible | Gain pour texte | Peut augmenter PNG/BIN |
 | CRC-16/CCITT-FALSE | Protection locale | Conformité G8 | Détection simple | Ne corrige pas les erreurs |
 | TLM-HDLC | Cadre de trames | Adresse/contrôle/longueur/stuffing | Structuration robuste | Convention et stuffing locaux |
-| CPFSK | Canal acoustique | Phase continue | Compatibilité FSK | Faibles fréquences sensibles au matériel |
+| CPFSK | Canal acoustique | Phase continue | Compatibilité FSK | Fréquences officielles élevées sensibles au matériel |
 | Énergie I/Q | Démodulation | Indépendante de phase | Simple/robuste | Synchronisation encore critique |
 | Trois profils | Conformité et expérimentation | Séparer officiel/acoustique/compatibilité | Évite les confusions | Interopérabilité à valider |
 | Stop-and-wait | Fiabilité | Simple à démontrer | Doublons gérables | Temps de transfert important |
@@ -646,21 +671,22 @@ Toutes les commandes dépendantes du matériel exigent PortAudio/Sounddevice et 
 | Date | Travail réalisé | Fichiers créés/modifiés | Résultats | Erreurs/solutions | Statut suivant |
 |---|---|---|---|---|---|
 | 27/11/2026 | Audit intégral des fichiers, Git, tests, docs, CSV/WAV/PNG | Création de [RAPPORT_EVOLUTION_PROJET.md](./RAPPORT_EVOLUTION_PROJET.md); lien ajouté au README | 87 tests réussis | Confusion entre simulations et essais physiques corrigée | Finaliser intégration fichiers/audio physique |
+| 27/11/2026 | Timeouts/TEB corrigés, campagnes préservées, transfert complet simulé | `transfert_fichier.py`, tests, CLI, guide deux PC | 100 tests réussis ; nouvelle campagne à −6 dB : 20/20 contre 11/20 | Double timeout, comptage des bits et bilans d'abandon corrigés | Implémenter le canal ARQ audio semi-duplex |
 
 ## 20. Reprendre le projet à partir de l'état actuel
 
 - **Projet :** transmettre un fichier 2 Ko maximum par voie acoustique entre deux ordinateurs et vérifier SHA-256.
 - **Paramètres :** G8 adresse `0x18`, 48 octets, f0/f1 `7400/7600 Hz`, 300 bauds, 48 kHz, CRC `0x1021/0xFFFF`, timeout 3 s, cinq tentatives.
 - **Architecture :** source → compression → découpage → HDLC/CRC → ARQ → CPFSK → canal → démodulation → reconstruction → décompression → SHA-256.
-- **Terminé :** module 1; émission/démodulation; 87 tests; AWGN; ARQ déterministe/FSK simulé.
-- **Derniers résultats :** 87/87 tests; TEB 10k bits de 0 à 0,064; ARQ gains à -6 dB; boucles G8/Bell exactes.
-- **Problèmes :** stabilité air, S/B physique absent, carte canal incomplète, ACK/NAK physiques absents, transfert fichier bout en bout non intégré.
-- **Phase actuelle :** intégration module 3 puis essais physiques/revalidations officielles.
-- **Priorités :** P0 transfert bout en bout, canal semi-duplex, câble/air, J6/J7.
+- **Terminé :** module 1; émission/démodulation; 100 tests; mesures AWGN corrigées; transfert complet de fichiers ARQ/FSK simulé.
+- **Derniers résultats :** 100/100 tests; nouvelle campagne à −6 dB : ARQ 20/20 contre 11/20 sans retransmission ; fichiers jusqu'à 2 Kio reconstruits à l'identique en simulation.
+- **Problèmes :** stabilité air, S/B physique absent, carte canal incomplète, ACK/NAK physiques absents, aucun transfert de fichier ARQ entre deux PC implémenté.
+- **Phase actuelle :** phase 3 simulée terminée ; préparation de la phase 4 audio entre deux PC.
+- **Priorités :** P0 canal ARQ audio semi-duplex, transfert bout en bout entre deux PC, câble/air, J6/J7.
 - **Fichiers clés :** `config.py`, `source.py`, `trame.py`, `arq.py`, `modem_fsk.py`, `canal_fsk.py`, `audio_io.py`, `recevoir.py`, `emettre.py` et ce rapport.
 - **Première commande :** `python -m unittest discover -s tests -v`.
-- **Prochaine action concrète :** construire un petit transfert de fichier simulé bout en bout, puis intégrer un canal audio en boucle avec récepteur et ACK.
+- **Prochaine action concrète :** suivre le [guide deux PC](GUIDE_DEUX_PC.md) pour vérifier les trajets sonores A→B et B→A, puis implémenter le canal ARQ audio semi-duplex.
 
 ## 21. Conclusion
 
-Le noyau numérique et les composants FSK/ARQ sont avancés et disposent de tests nombreux. Les mesures locales montrent que CRC, compression, reconstruction et boucles numériques sont fiables. Les résultats acoustiques ponctuels ne doivent pas être confondus avec une stabilité permanente. Le travail bloquant est désormais l'intégration bout en bout entre les deux ordinateurs, les mesures physiques réelles et la validation officielle J6/J7.
+Le noyau numérique et les composants FSK/ARQ sont avancés et disposent de tests nombreux. Les mesures locales montrent que CRC, compression, reconstruction et boucles numériques sont fiables. Les résultats acoustiques ponctuels ne doivent pas être confondus avec une stabilité permanente. La phase 3 valide désormais le transfert complet de fichier en simulation locale. Le travail bloquant reste le canal ARQ audio entre les deux ordinateurs, les mesures physiques réelles et la validation officielle J6/J7.

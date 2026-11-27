@@ -1,7 +1,7 @@
-# Modem acoustique — Module 1 — G8
+# Modem acoustique G8 — modules 1 à 3
 UNH · Télématique L3 · Ass. Nathan MBAYO · 2026–2027
 
-Préparation des données : entropie, compression zlib, trames 8N1/8E2 et TLM-HDLC, bit stuffing, CRC-16 et boucle locale sans son.
+Préparation des données, CPFSK, réception audio et ARQ. Le transfert complet de fichiers jusqu'à 2 Kio est maintenant intégré en simulation locale ; le canal ARQ audio entre deux PC reste à implémenter.
 
 ## Fichiers à remettre
 
@@ -26,7 +26,7 @@ python crc.py
 python tests/test_module1.py --mesures
 ```
 
-Python seul suffit ; aucune bibliothèque externe n'est utilisée pour ces commandes.
+Le noyau du module 1 utilise la bibliothèque standard. La suite complète des modules 1 à 3 nécessite les dépendances de `requirements.txt`.
 
 J1 : `python crc.py` doit afficher `0x29B1`.
 
@@ -67,6 +67,33 @@ python main.py audio --jouer
 `audio` crée `mesures/tonalite_1000Hz.wav`, mono, 1 kHz, 48 kHz, deux secondes et amplitude 0,5. Sans `--jouer`, aucun périphérique n'est sollicité; l'écoute et le microphone restent des validations humaines. Les graphiques proviennent des CSV et ne sont pas des captures Audacity.
 
 Voir [le rapport général d'évolution du projet](docs/RAPPORT_EVOLUTION_PROJET.md), `docs/protocole.md`, `docs/AUDIT_MODULE1.md`, `docs/resultats_commentes.md` et les gabarits d'annexes. Les validations officielles, signatures, expériences physiques et annexes Word externes ne sont pas prétendues comme effectuées.
+
+## Transfert de fichier ARQ/FSK simulé
+
+```bash
+python main.py fichier-simuler donnees/message_g8.txt --sortie reception/mon_essai
+python main.py fichier-simuler donnees/message_g8.txt --sortie reception/mon_essai_perte --actions ok perte_ack
+```
+
+La sortie donne les deux SHA-256, `identiques: true` et les statistiques ARQ.
+Les fichiers existants sont préservés. Cette commande ne joue aucun son et ne
+relie pas deux machines. Les essais complets couvrent TXT, CSV, PNG, ZIP, BIN,
+fichier vide, 1 Kio et 2 Kio.
+
+Les nouveaux résultats corrigés restent séparés dans
+`mesures/module3/simulation_corrigee/` :
+
+```bash
+python mesures_arq.py
+python mesures_arq.py --sans-arq
+python synthese_module3.py
+python graphiques_module3.py
+```
+
+Voir la [phase 3](docs/MODULE3_PHASE3.md) et le [guide pratique pour deux PC](docs/GUIDE_DEUX_PC.md).
+**Aucun réseau commun n'est nécessaire pour les essais acoustiques.** Le guide
+donne les commandes du premier test sonore et distingue celui-ci d'un transfert
+de fichier avec ACK/NAK audio, encore à implémenter.
 
 ## Validation en séance
 

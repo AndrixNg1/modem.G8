@@ -1,0 +1,31 @@
+{
+  "mode": "SIMULATION_LOCALE",
+  "profil": "G8",
+  "fichier": "message_g8.txt",
+  "taille_originale": 42,
+  "taille_paquet": 70,
+  "compression": false,
+  "sha256_original": "e1b9382457b0756f051b150e9762869b82a083183e3f4d9e4b280018c33cbbc5",
+  "sha256_recu": "e1b9382457b0756f051b150e9762869b82a083183e3f4d9e4b280018c33cbbc5",
+  "identiques": true,
+  "destination": "reception/phase3/message_g8.txt",
+  "statistiques": {
+    "trames_originales": 2,
+    "tentatives": 2,
+    "retransmissions": 0,
+    "ack": 2,
+    "nak": 0,
+    "corrompues": 0,
+    "doublons_ignores": 0,
+    "delais": 0,
+    "octets_acceptes": 70,
+    "duree_simulee": 3.0433333333333334,
+    "statut": "OK",
+    "ack_emis": 2,
+    "ack_perdus": 0,
+    "nak_emis": 0,
+    "trames_acceptees": 2
+  },
+  "debit_fichier_bit_s": 110.4052573932092,
+  "teb_brut": 0.0
+}
